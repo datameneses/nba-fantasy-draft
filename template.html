@@ -81,7 +81,7 @@ td{border-bottom:1px solid var(--grid)}tr:last-child td{border:0}
 .foot{margin-top:14px;color:var(--muted);font-size:13px}
 </style></head><body><main>
 <h1>NBA Fantasy Draft Board</h1>
-<p class="sub">Total fantasy points from Sleeper (standard scoring), one season at a time.</p>
+<p class="sub">Total fantasy points under the Universo BSB Fantasy league scoring, one season at a time.</p>
 <div class="controls">
  <select id="year" aria-label="Season"></select>
  <select id="pos" aria-label="Position"><option value="">All positions</option><option>PG</option><option>SG</option><option>SF</option><option>PF</option><option>C</option></select>
@@ -96,7 +96,7 @@ td{border-bottom:1px solid var(--grid)}tr:last-child td{border:0}
  <div id="teams"></div></section>
 
 <div class="wrap"><table><thead><tr id="hr"></tr></thead><tbody id="b"></tbody></table></div>
-<p class="foot">Charts and table follow the filters above. Table columns show Sleeper's fantasy points per stat; all are per-game averages except triple-doubles and double-doubles, which are season totals. Made shots are subtracted, so a 2-pointer nets +1, a 3-pointer +2 and a free throw +0.5. 40- and 50-point game bonuses (+2 each) are not shown. Position and team are as listed by Sleeper. The 2026-27 view shows each player\u2019s 2025-26 points and stats under the team Sleeper lists for them now (\u201cFA\u201d = no team), so it reflects roster moves, not 2026-27 production. Hover a player name for a three-season trend. Click a table header to sort.</p>
+<p class="foot">Charts and table follow the filters above. Scoring is the Universo BSB Fantasy league's: triple-double, steal, block, 40+ point game and 50+ point game +2 each; double-double, assist, 15+ assist game and 20+ rebound game +1 each; rebound +0.75; point and 3-pointer made +0.5 each; turnover −1; technical and flagrant foul −2 each. A triple-double also counts as a double-double. Points, rebounds, assists, steals, blocks, turnovers and 3-pointers made are per-game averages; the rest are season totals. Season totals come from Sleeper's official regular-season stats (NBA Cup knockout games are not included); bonus-game counts come from Sleeper's game logs. Position and team are as listed by Sleeper. The 2026-27 view shows each player\u2019s 2025-26 points and stats under the team Sleeper lists for them now (\u201cFA\u201d = no team), so it reflects roster moves, not 2026-27 production. Hover a player name for a three-season trend. Click a table header to sort.</p>
 </main>
 <div id="tip" role="tooltip"></div>
 <div id="trend" role="tooltip"></div>
@@ -105,7 +105,7 @@ const DATA=/*DATA*/;
 const POS=[['PG','Point guards'],['SG','Shooting guards'],['SF','Small forwards'],['PF','Power forwards'],['C','Centers']];
 const $=id=>document.getElementById(id);
 const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
-const f1=n=>n.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1});
+const f1=n=>n.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:2});
 const seasons=[...new Set(DATA.map(d=>d.season))].sort().reverse();
 const PROJ='2026-27';
 const seasonLabel=y=>y==PROJ?PROJ+' (2025-26 points, current teams)':y;
@@ -237,8 +237,10 @@ addEventListener('resize',fitLabels);
 
 /* table */
 const COLS=[['name','Player'],['team','Team'],['pos','Position'],['gp','Games played',1],['fp','Fantasy points',1],['fppg','Fantasy points per game',1],
- ['td','Triple-doubles (+2)',1],['stl','Steals (+2)',1],['blk','Blocks (+2)',1],['dd','Double-doubles (+1)',1],['pts','Points (+1)',1],['reb','Rebounds (+1)',1],['ast','Assists (+1)',1],
- ['ftm','Free throws made (−0.5)',1],['to','Turnovers (−1)',1],['fgm','Field goals made (−1)',1]];
+ ['td','Triple-doubles (+2)',1],['stl','Steals (+2)',1],['blk','Blocks (+2)',1],['b40','40+ point games (+2)',1],['b50','50+ point games (+2)',1],
+ ['dd','Double-doubles (+1)',1],['ast','Assists (+1)',1],['ba15','15+ assist games (+1)',1],['br20','20+ rebound games (+1)',1],
+ ['reb','Rebounds (+0.75)',1],['pts','Points (+0.5)',1],['tpm','3-pointers made (+0.5)',1],
+ ['to','Turnovers (−1)',1],['tf','Technical fouls (−2)',1],['ff','Flagrant fouls (−2)',1]];
 let sk='fp',dir=-1;
 COLS.forEach(([k,l,n])=>{const th=el('th',n?'n':'',l);th.dataset.k=k;th.onclick=()=>{dir=sk==k?-dir:(n?-1:1);sk=k;render()};$('hr').append(th)});
 function table(rs){
@@ -249,7 +251,7 @@ function table(rs){
    const td=el('td',n?'n'+(k=='fp'?' fp':''):'');
    if(k=='name'){td.append(el('b',null,d.name));trendOn(td,d)}
    else if(k=='pos')td.append(el('span','pos',d.pos));
-   else td.textContent=['fp','fppg','pts','reb','ast','stl','blk','to','fgm','ftm'].includes(k)?f1(d[k]):d[k];
+   else td.textContent=['fp','fppg','pts','reb','ast','stl','blk','to','tpm'].includes(k)?f1(d[k]):d[k];
    tr.append(td);
   });return tr;
  }));
