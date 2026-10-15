@@ -110,7 +110,7 @@ const seasons=[...new Set(DATA.map(d=>d.season))].sort().reverse();
 const PROJ='2026-27';
 const seasonLabel=y=>y==PROJ?PROJ+' (2025-26 points, current teams)':y;
 seasons.forEach(y=>$('year').add(new Option(seasonLabel(y),y)));
-$('year').value='2025-26';
+$('year').value=PROJ;
 
 /* tooltip */
 const tip=$('tip');
