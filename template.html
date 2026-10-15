@@ -96,7 +96,7 @@ td{border-bottom:1px solid var(--grid)}tr:last-child td{border:0}
  <div id="teams"></div></section>
 
 <div class="wrap"><table><thead><tr id="hr"></tr></thead><tbody id="b"></tbody></table></div>
-<p class="foot">Charts and table follow the filters above. Table columns show Sleeper's fantasy points per stat; all are per-game averages except triple-doubles and double-doubles, which are season totals. Made shots are subtracted, so a 2-pointer nets +1, a 3-pointer +2 and a free throw +0.5. 40- and 50-point game bonuses (+2 each) are not shown. Position and team are as listed by Sleeper. Hover a player name for a three-season trend. Click a table header to sort.</p>
+<p class="foot">Charts and table follow the filters above. Table columns show Sleeper's fantasy points per stat; all are per-game averages except triple-doubles and double-doubles, which are season totals. Made shots are subtracted, so a 2-pointer nets +1, a 3-pointer +2 and a free throw +0.5. 40- and 50-point game bonuses (+2 each) are not shown. Position and team are as listed by Sleeper. The 2026-27 view shows each player\u2019s 2025-26 points and stats under the team Sleeper lists for them now (\u201cFA\u201d = no team), so it reflects roster moves, not 2026-27 production. Hover a player name for a three-season trend. Click a table header to sort.</p>
 </main>
 <div id="tip" role="tooltip"></div>
 <div id="trend" role="tooltip"></div>
@@ -107,8 +107,10 @@ const $=id=>document.getElementById(id);
 const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
 const f1=n=>n.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1});
 const seasons=[...new Set(DATA.map(d=>d.season))].sort().reverse();
-seasons.forEach(y=>$('year').add(new Option(y,y)));
-$('year').value=seasons[0];
+const PROJ='2026-27';
+const seasonLabel=y=>y==PROJ?PROJ+' (2025-26 points, current teams)':y;
+seasons.forEach(y=>$('year').add(new Option(seasonLabel(y),y)));
+$('year').value='2025-26';
 
 /* tooltip */
 const tip=$('tip');
@@ -131,14 +133,14 @@ const playerLines=r=>[f1(r.fp)+' fantasy points',r.name+' · '+r.pos+' · '+r.te
 
 /* three-season trend popover */
 const byId={};DATA.forEach(d=>(byId[d.id]=byId[d.id]||{})[d.season]=d);
-const asc=[...seasons].reverse(),trend=$('trend');
+const asc=seasons.filter(s=>s!=PROJ).reverse(),trend=$('trend');
 function showTrend(e,r,ctx){
  hideTip();
  const h=byId[r.id],max=Math.max(1,...asc.map(s=>h[s]?h[s].fp:0));
  trend.replaceChildren(el('b',null,r.name),el('span','tsub',(ctx?ctx+' · ':'')+r.pos+' · '+r.team),el('span','tcap','Total fantasy points by season'));
  const cols=el('div','tcols');
  asc.forEach(s=>{
-  const v=h[s],c=el('div','tc'+(s==r.season?' cur':'')),w=el('div','tw');
+  const v=h[s],c=el('div','tc'+(s==(r.src||r.season)?' cur':'')),w=el('div','tw');
   if(v){
    const b=el('div','tb');b.style.height=Math.max(3,Math.round(72*v.fp/max))+'px';
    w.append(el('span','tv',f1(v.fp)),b);
@@ -256,9 +258,10 @@ function table(rs){
 
 function render(){
  const rs=rows(),y=$('year').value;
- $('d1').textContent=y+' · total fantasy points';
- $('d2').textContent=y+' · total fantasy points · each position ranked on the same scale';
- $('d3').textContent=y+' · total fantasy points of each team’s three highest scorers, stacked · teams ranked by combined total · hover a segment for the player\u2019s trend';
+ const lbl=y==PROJ?'2026-27 teams, 2025-26 points':y;
+ $('d1').textContent=lbl+' · total fantasy points';
+ $('d2').textContent=lbl+' · total fantasy points · each position ranked on the same scale';
+ $('d3').textContent=lbl+' · total fantasy points of each team’s three highest scorers, stacked · teams ranked by combined total · hover a segment for the player\u2019s trend';
  chart1(rs);chart2(rs);chart3(rs);table(rs);hideTip();hideTrend();
 }
 $('year').addEventListener('input',()=>{fillTeams();render()});
