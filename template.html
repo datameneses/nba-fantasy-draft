@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NBA Fantasy Draft Board</title>
+<style>
+:root{
+ color-scheme:light;
+ --bg:#f9f9f7;--surface:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--muted:#898781;--grid:#e1e0d9;--axis:#c3c2b7;--ring:rgba(11,11,11,.10);
+ --bar:#2a78d6;--r1:#184f95;--r2:#3987e5;--r3:#86b6ef;--t1:#fff;--t2:#0b0b0b;--t3:#0b0b0b;--accent:#256abf;
+}
+@media (prefers-color-scheme:dark){:root:where(:not([data-theme="light"])){
+ color-scheme:dark;
+ --bg:#0d0d0d;--surface:#1a1a19;--ink:#fff;--ink2:#c3c2b7;--muted:#898781;--grid:#2c2c2a;--axis:#383835;--ring:rgba(255,255,255,.10);
+ --bar:#3987e5;--r1:#9ec5f4;--r2:#3987e5;--r3:#184f95;--t1:#0b0b0b;--t2:#0b0b0b;--t3:#fff;--accent:#6da7ec;}}
+:root[data-theme="dark"]{
+ color-scheme:dark;
+ --bg:#0d0d0d;--surface:#1a1a19;--ink:#fff;--ink2:#c3c2b7;--muted:#898781;--grid:#2c2c2a;--axis:#383835;--ring:rgba(255,255,255,.10);
+ --bar:#3987e5;--r1:#9ec5f4;--r2:#3987e5;--r3:#184f95;--t1:#0b0b0b;--t2:#0b0b0b;--t3:#fff;--accent:#6da7ec;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:1100px;margin:0 auto;padding:24px 16px 48px}
+h1{margin:0 0 4px;font-size:24px}
+p.sub{margin:0 0 18px;color:var(--ink2)}
+.controls{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+select,input{padding:8px 10px;border:1px solid var(--grid);border-radius:8px;background:var(--surface);color:var(--ink);font:inherit}
+input{flex:1;min-width:180px}
+.card{background:var(--surface);border:1px solid var(--ring);border-radius:12px;padding:16px 18px;margin-bottom:16px}
+.card h2{margin:0;font-size:16px}
+.card p.d{margin:2px 0 14px;color:var(--ink2);font-size:13px}
+.empty{color:var(--muted);padding:12px 0;font-size:14px}
+/* bar rows */
+.row{display:grid;grid-template-columns:var(--lw,170px) 1fr;align-items:center;gap:10px;min-height:28px;padding:2px 0;border-radius:6px;outline:none}
+.row:hover,.row:focus-visible{background:color-mix(in srgb,var(--ink) 5%,transparent)}
+.row:focus-visible{outline:2px solid var(--accent)}
+.lab{min-width:0;line-height:1.2}
+.nm{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;color:var(--ink)}
+.sm{display:block;font-size:11px;color:var(--muted)}
+.trk{display:flex;align-items:center;height:24px;border-left:1px solid var(--axis);min-width:0}
+.bar,.seg{flex:none;transition:filter .1s}
+.bar{height:20px}
+.seg{height:28px;display:flex;align-items:center;padding-left:6px;font-size:10px;font-weight:600;white-space:nowrap;color:var(--t);cursor:default}
+.bar{background:var(--bar);border-radius:0 4px 4px 0}
+.row:hover .bar,.row:focus-visible .bar,.seg:hover{filter:brightness(1.15)}
+.seg+.seg{margin-left:2px}
+.seg:last-of-type{border-radius:0 4px 4px 0}
+.s0{background:var(--r1);--t:var(--t1)}.s1{background:var(--r2);--t:var(--t2)}.s2{background:var(--r3);--t:var(--t3)}
+.val{margin-left:8px;font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+.panels{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px 28px;--lw:150px}
+.panels h3{margin:0 0 6px;font-size:13px;font-weight:600;color:var(--ink2)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin:0 0 10px;font-size:12px;color:var(--ink2)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-right:6px;vertical-align:-2px}
+#teams{--lw:56px}
+#teams .trk{height:34px}
+.tn{cursor:default}.tn:hover .nm,.tn:hover b{text-decoration:underline dotted;text-underline-offset:3px}
+/* tooltip */
+#tip{position:fixed;z-index:10;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--ring);box-shadow:0 4px 16px rgba(0,0,0,.18);border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.35;max-width:260px;display:none}
+#tip b{display:block;font-size:15px}#tip span{display:block;color:var(--ink2)}
+#tip .k{display:inline-block;width:10px;height:3px;margin-right:6px;vertical-align:middle;border-radius:2px}
+/* trend popover */
+#trend{position:fixed;z-index:11;pointer-events:none;background:var(--surface);color:var(--ink);border:1px solid var(--ring);box-shadow:0 4px 16px rgba(0,0,0,.18);border-radius:10px;padding:12px 14px;width:270px;display:none}
+#trend b{display:block;font-size:15px}
+#trend .tsub{display:block;font-size:12px;color:var(--ink2)}
+#trend .tcap{display:block;font-size:11px;color:var(--muted);margin:10px 0 4px}
+.tcols{display:flex;gap:8px}
+.tc{flex:1;display:flex;flex-direction:column;align-items:center;text-align:center}
+.tw{height:104px;width:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;border-bottom:1px solid var(--axis);gap:3px}
+.tv{font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+.tb{width:24px;background:var(--bar);border-radius:4px 4px 0 0;opacity:.5}
+.tc.cur .tb{opacity:1}
+.ts{font-size:11px;font-weight:600;margin-top:4px}
+.tg{font-size:10px;color:var(--muted)}
+/* table */
+.wrap{overflow-x:auto;border:1px solid var(--ring);border-radius:12px;background:var(--surface)}
+table{width:100%;border-collapse:collapse;min-width:1100px}
+th,td{padding:9px 12px;text-align:left;white-space:nowrap}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);cursor:pointer;user-select:none;border-bottom:1px solid var(--grid)}
+th.on{color:var(--accent)}
+td{border-bottom:1px solid var(--grid)}tr:last-child td{border:0}
+.n{text-align:right;font-variant-numeric:tabular-nums}
+.pos{display:inline-block;padding:1px 8px;border-radius:99px;border:1px solid var(--grid);font-size:12px;font-weight:600}
+.fp{font-weight:700;color:var(--accent)}
+.foot{margin-top:14px;color:var(--muted);font-size:13px}
+</style></head><body><main>
+<h1>NBA Fantasy Draft Board</h1>
+<p class="sub">Total fantasy points from Sleeper (standard scoring), one season at a time.</p>
+<div class="controls">
+ <select id="year" aria-label="Season"></select>
+ <select id="pos" aria-label="Position"><option value="">All positions</option><option>PG</option><option>SG</option><option>SF</option><option>PF</option><option>C</option></select>
+ <select id="team" aria-label="Team"></select>
+ <input id="q" placeholder="Search player name…" aria-label="Search player name">
+</div>
+
+<section class="card"><h2>Top 10 players overall</h2><p class="d" id="d1"></p><div id="c1"></div></section>
+<section class="card"><h2>Top 5 players by position</h2><p class="d" id="d2"></p><div id="c2" class="panels"></div></section>
+<section class="card"><h2>Top 3 players by team</h2><p class="d" id="d3"></p>
+ <div class="legend"><span><i class="s0"></i>Top player</span><span><i class="s1"></i>2nd player</span><span><i class="s2"></i>3rd player</span></div>
+ <div id="teams"></div></section>
+
+<div class="wrap"><table><thead><tr id="hr"></tr></thead><tbody id="b"></tbody></table></div>
+<p class="foot">Charts and table follow the filters above. Table columns show Sleeper's fantasy points per stat; all are per-game averages except triple-doubles and double-doubles, which are season totals. Made shots are subtracted, so a 2-pointer nets +1, a 3-pointer +2 and a free throw +0.5. 40- and 50-point game bonuses (+2 each) are not shown. Position and team are as listed by Sleeper. Hover a player name for a three-season trend. Click a table header to sort.</p>
+</main>
+<div id="tip" role="tooltip"></div>
+<div id="trend" role="tooltip"></div>
+<script>
+const DATA=/*DATA*/;
+const POS=[['PG','Point guards'],['SG','Shooting guards'],['SF','Small forwards'],['PF','Power forwards'],['C','Centers']];
+const $=id=>document.getElementById(id);
+const el=(t,c,x)=>{const e=document.createElement(t);if(c)e.className=c;if(x!=null)e.textContent=x;return e};
+const f1=n=>n.toLocaleString('en-US',{minimumFractionDigits:1,maximumFractionDigits:1});
+const seasons=[...new Set(DATA.map(d=>d.season))].sort().reverse();
+seasons.forEach(y=>$('year').add(new Option(y,y)));
+$('year').value=seasons[0];
+
+/* tooltip */
+const tip=$('tip');
+function showTip(e,lines,key){
+ tip.replaceChildren();
+ lines.forEach((l,i)=>{const n=el(i==0?'b':'span');if(i==0&&key){const k=el('i','k');k.style.background=key;n.append(k)}n.append(document.createTextNode(l));tip.append(n)});
+ tip.style.display='block';
+ const r=e.currentTarget.getBoundingClientRect(),x=e.clientX||r.left+20,y=e.clientY||r.top;
+ const w=tip.offsetWidth,h=tip.offsetHeight;
+ tip.style.left=Math.max(8,Math.min(x+14,innerWidth-w-8))+'px';
+ tip.style.top=Math.max(8,Math.min(y+14,innerHeight-h-8))+'px';
+}
+const hideTip=()=>tip.style.display='none';
+function hook(node,lines,key,label){
+ node.tabIndex=0;node.setAttribute('aria-label',label);
+ ['pointermove','focus'].forEach(t=>node.addEventListener(t,e=>showTip(e,lines,key)));
+ ['pointerleave','blur'].forEach(t=>node.addEventListener(t,hideTip));
+}
+const playerLines=r=>[f1(r.fp)+' fantasy points',r.name+' · '+r.pos+' · '+r.team,r.gp+' games · '+f1(r.fppg)+' per game'];
+
+/* three-season trend popover */
+const byId={};DATA.forEach(d=>(byId[d.id]=byId[d.id]||{})[d.season]=d);
+const asc=[...seasons].reverse(),trend=$('trend');
+function showTrend(e,r,ctx){
+ hideTip();
+ const h=byId[r.id],max=Math.max(1,...asc.map(s=>h[s]?h[s].fp:0));
+ trend.replaceChildren(el('b',null,r.name),el('span','tsub',(ctx?ctx+' · ':'')+r.pos+' · '+r.team),el('span','tcap','Total fantasy points by season'));
+ const cols=el('div','tcols');
+ asc.forEach(s=>{
+  const v=h[s],c=el('div','tc'+(s==r.season?' cur':'')),w=el('div','tw');
+  if(v){
+   const b=el('div','tb');b.style.height=Math.max(3,Math.round(72*v.fp/max))+'px';
+   w.append(el('span','tv',f1(v.fp)),b);
+   c.append(w,el('span','ts',s),el('span','tg',v.gp+' GP · '+v.team),el('span','tg',f1(v.fppg)+' per game'));
+  }else{
+   w.append(el('span','tv','\u2014'));
+   c.append(w,el('span','ts',s),el('span','tg','Did not play'));
+  }
+  cols.append(c);
+ });
+ trend.append(cols);trend.style.display='block';
+ const rc=e.currentTarget.getBoundingClientRect(),x=e.clientX||rc.left+20,y=e.clientY||rc.bottom;
+ const w=trend.offsetWidth,hh=trend.offsetHeight;
+ trend.style.left=Math.max(8,Math.min(x+14,innerWidth-w-8))+'px';
+ trend.style.top=Math.max(8,Math.min(y+14>innerHeight-hh-8?y-hh-14:y+14,innerHeight-hh-8))+'px';
+}
+const hideTrend=()=>trend.style.display='none';
+function trendOn(node,r,ctx){
+ node.classList.add('tn');
+ node.addEventListener('pointermove',e=>{e.stopPropagation();showTrend(e,r,ctx)});
+ node.addEventListener('pointerleave',hideTrend);
+}
+
+/* filters */
+function rows(){
+ const y=$('year').value,p=$('pos').value,t=$('team').value,q=$('q').value.trim().toLowerCase();
+ return DATA.filter(d=>d.season==y&&(!p||d.pos==p)&&(!t||d.team==t)&&(!q||d.name.toLowerCase().includes(q)));
+}
+function fillTeams(){
+ const keep=$('team').value,y=$('year').value;
+ const ts=[...new Set(DATA.filter(d=>d.season==y).map(d=>d.team))].sort();
+ $('team').replaceChildren(new Option('All teams',''),...ts.map(t=>new Option(t,t)));
+ if(ts.includes(keep))$('team').value=keep;
+}
+
+/* chart 1 & 2: single-color ranked bars */
+function barRow(r,max,sub){
+ const row=el('div','row'),lab=el('div','lab'),trk=el('div','trk');
+ const nm=el('span','nm',r.name);trendOn(nm,r);lab.append(nm,el('span','sm',sub));
+ const bar=el('div','bar');bar.style.width=`calc((100% - 64px) * ${Math.max(r.fp,0)/max})`;
+ trk.append(bar,el('span','val',f1(r.fp)));
+ row.append(lab,trk);hook(row,playerLines(r),'var(--bar)',r.name+', '+f1(r.fp)+' fantasy points');
+ return row;
+}
+function chart1(rs){
+ const top=[...rs].sort((a,b)=>b.fp-a.fp).slice(0,10),c=$('c1');c.replaceChildren();
+ if(!top.length){c.append(el('div','empty','No players match these filters.'));return}
+ top.forEach(r=>c.append(barRow(r,top[0].fp,r.pos+' · '+r.team)));
+}
+function chart2(rs){
+ const c=$('c2');c.replaceChildren();
+ const groups=POS.map(([p,n])=>[p,n,rs.filter(r=>r.pos==p).sort((a,b)=>b.fp-a.fp).slice(0,5)]).filter(g=>g[2].length);
+ if(!groups.length){c.append(el('div','empty','No players match these filters.'));return}
+ const max=Math.max(...groups.map(g=>g[2][0].fp));
+ groups.forEach(([p,n,top])=>{
+  const box=el('div');box.append(el('h3',null,n+' ('+p+')'));
+  top.forEach(r=>box.append(barRow(r,max,r.team)));c.append(box);
+ });
+}
+/* chart 3: stacked top-3 per team */
+function chart3(rs){
+ const c=$('teams');c.replaceChildren();
+ const by={};rs.forEach(r=>{if(r.team!='FA')(by[r.team]=by[r.team]||[]).push(r)});
+ const teams=Object.entries(by).map(([t,a])=>{a.sort((x,y)=>y.fp-x.fp);const top=a.slice(0,3);return{t,top,sum:top.reduce((s,r)=>s+r.fp,0)}})
+  .sort((a,b)=>b.sum-a.sum);
+ if(!teams.length){c.append(el('div','empty','No players match these filters.'));return}
+ const max=teams[0].sum,ord=['Top player','2nd player','3rd player'];
+ teams.forEach(({t,top,sum})=>{
+  const row=el('div','row'),lab=el('div','lab'),trk=el('div','trk');
+  lab.append(el('span','nm',t));
+  top.forEach((r,i)=>{
+   const s=el('div','seg s'+i);s.style.width=`calc((100% - 72px) * ${Math.max(r.fp,0)/max})`;s.dataset.name=r.name;
+   s.tabIndex=0;s.setAttribute('aria-label',r.name+', '+f1(r.fp)+' fantasy points, '+ord[i]+' on '+t);
+   trendOn(s,r,ord[i]+' on '+t);
+   s.addEventListener('focus',e=>showTrend(e,r,ord[i]+' on '+t));s.addEventListener('blur',hideTrend);
+   trk.append(s);
+  });
+  trk.append(el('span','val',f1(sum)));
+  row.append(lab,trk);c.append(row);
+ });
+ fitLabels();
+}
+/* name labels inside segments: full name, then initial + last name, then last name, else none */
+const cv=document.createElement('canvas').getContext('2d');
+function fitLabels(){
+ cv.font='600 10px '+getComputedStyle(document.body).fontFamily;
+ document.querySelectorAll('#teams .seg').forEach(s=>{
+  const n=s.dataset.name,p=n.split(' '),last=p.slice(1).join(' ')||n;
+  const pick=[n,p.length>1?p[0][0]+'. '+last:n,last].find(o=>cv.measureText(o).width<=s.clientWidth-12);
+  s.textContent=pick||'';
+ });
+}
+addEventListener('resize',fitLabels);
+
+/* table */
+const COLS=[['name','Player'],['team','Team'],['pos','Position'],['gp','Games played',1],['fp','Fantasy points',1],['fppg','Fantasy points per game',1],
+ ['td','Triple-doubles (+2)',1],['stl','Steals (+2)',1],['blk','Blocks (+2)',1],['dd','Double-doubles (+1)',1],['pts','Points (+1)',1],['reb','Rebounds (+1)',1],['ast','Assists (+1)',1],
+ ['ftm','Free throws made (−0.5)',1],['to','Turnovers (−1)',1],['fgm','Field goals made (−1)',1]];
+let sk='fp',dir=-1;
+COLS.forEach(([k,l,n])=>{const th=el('th',n?'n':'',l);th.dataset.k=k;th.onclick=()=>{dir=sk==k?-dir:(n?-1:1);sk=k;render()};$('hr').append(th)});
+function table(rs){
+ const sorted=[...rs].sort((a,b)=>(a[sk]>b[sk]?1:a[sk]<b[sk]?-1:0)*dir);
+ $('b').replaceChildren(...sorted.map(d=>{
+  const tr=el('tr');
+  COLS.forEach(([k,,n])=>{
+   const td=el('td',n?'n'+(k=='fp'?' fp':''):'');
+   if(k=='name'){td.append(el('b',null,d.name));trendOn(td,d)}
+   else if(k=='pos')td.append(el('span','pos',d.pos));
+   else td.textContent=['fp','fppg','pts','reb','ast','stl','blk','to','fgm','ftm'].includes(k)?f1(d[k]):d[k];
+   tr.append(td);
+  });return tr;
+ }));
+ document.querySelectorAll('th').forEach(t=>t.classList.toggle('on',t.dataset.k==sk));
+}
+
+function render(){
+ const rs=rows(),y=$('year').value;
+ $('d1').textContent=y+' · total fantasy points';
+ $('d2').textContent=y+' · total fantasy points · each position ranked on the same scale';
+ $('d3').textContent=y+' · total fantasy points of each team’s three highest scorers, stacked · teams ranked by combined total · hover a segment for the player\u2019s trend';
+ chart1(rs);chart2(rs);chart3(rs);table(rs);hideTip();hideTrend();
+}
+$('year').addEventListener('input',()=>{fillTeams();render()});
+['pos','team','q'].forEach(i=>$(i).addEventListener('input',render));
+fillTeams();render();
+</script></body></html>
